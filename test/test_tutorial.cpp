@@ -691,6 +691,7 @@ TEST_F(NVFuserTest, TMP1) {
         .enable_ptxas_verbose = true};
     FusionExecutor fe;
     fe.compileFusion(fusion, {t0}, LaunchParams{}, compile_opts);
+    clearL2Cache();
     auto cg_outputs = fe.runFusion({t0}, LaunchParams{}, compile_opts);
   };
   // kernel1 run in 0.814496 ms, achieved: 2966.15 GB/s
