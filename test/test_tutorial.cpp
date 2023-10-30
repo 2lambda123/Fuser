@@ -702,6 +702,10 @@ TEST_F(NVFuserTest, TMP1) {
 
   // kernel1 run in 0.913152 ms, achieved: 2645.69 GB/s
   // kernel2 run in 0.816928 ms, achieved: 2957.32 GB/s  
+
+  // can't reproduce from root@cl1-2547:
+  // kernel1 run in 3.09197 ms, achieved: 781.353 GB/s
+  // kernel2 run in 3.31011 ms, achieved: 729.86 GB/s
   for (auto index_type : {PrimDataType::Int32, PrimDataType::Int}) {
     test(index_type);
   }
