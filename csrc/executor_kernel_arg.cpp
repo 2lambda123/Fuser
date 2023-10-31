@@ -215,6 +215,7 @@ std::vector<std::byte> polymorphicValueToBytes(
     }
     return buffer;
   } else if (argument.is<int64_t>()) {
+    std::cout << "argument.is<int64_t>()" << std::endl;
     // FUSER_PERF_SCOPE("polymorphicValueToBytes(int64_t)");
     int64_t v = argument.as<int64_t>();
     if (dtype == DataType::Int ||

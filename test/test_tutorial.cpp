@@ -630,70 +630,70 @@ TEST_F(Tutorial, Reshape) {
   }
 }
 
-TEST_F(NVFuserTest, TMP1) {
-  auto test = [](PrimDataType index_type) {
-    int64_t batch = 32 * 1024;
-    int64_t size = 18 * 1024;
-    std::unique_ptr<Fusion> fusion_ptr = std::make_unique<Fusion>();
-    auto fusion = fusion_ptr.get();
-    FusionGuard fg(fusion);
-    int kReductionAxis = -1;
-    auto dtype = DataType::Half;
-    // TensorView* x = makeContigConcreteTensor({batch, size}, dtype);
-    TensorView* x = makeContigTensor(2, dtype);
-    fusion->addInput(x);
-    auto x_cache = set(x);
-    auto x_cast = castOp(DataType::Float, x_cache);
-    auto max_val = max(x_cast, {kReductionAxis});
-    auto bcast_max = broadcast(max_val, {false, true});
-    auto x_max_sub = sub(x_cast, bcast_max);
-    auto exp_val = exp(x_max_sub);
-    auto sum_exp = sum(exp_val, {kReductionAxis});
-    auto bcast_sum = broadcast(sum_exp, {false, true});
-    auto y_cache = mul(exp_val, reciprocal(bcast_sum));
-    if (dtype == DataType::Half) {
-      y_cache = castOp(DataType::Half, y_cache);
-    }
-    auto y = set(y_cache);
-    fusion->addOutput(y);
+auto test = [](PrimDataType index_type) {
+  int64_t batch = 32 * 1024;
+  int64_t size = 18 * 1024;
+  std::unique_ptr<Fusion> fusion_ptr = std::make_unique<Fusion>();
+  auto fusion = fusion_ptr.get();
+  FusionGuard fg(fusion);
+  int kReductionAxis = -1;
+  auto dtype = DataType::Half;
+  // TensorView* x = makeContigConcreteTensor({batch, size}, dtype);
+  TensorView* x = makeContigTensor(2, dtype);
+  fusion->addInput(x);
+  auto x_cache = set(x);
+  auto x_cast = castOp(DataType::Float, x_cache);
+  auto max_val = max(x_cast, {kReductionAxis});
+  auto bcast_max = broadcast(max_val, {false, true});
+  auto x_max_sub = sub(x_cast, bcast_max);
+  auto exp_val = exp(x_max_sub);
+  auto sum_exp = sum(exp_val, {kReductionAxis});
+  auto bcast_sum = broadcast(sum_exp, {false, true});
+  auto y_cache = mul(exp_val, reciprocal(bcast_sum));
+  if (dtype == DataType::Half) {
+    y_cache = castOp(DataType::Half, y_cache);
+  }
+  auto y = set(y_cache);
+  fusion->addOutput(y);
 
-    max_val->split(-1, 8);
-    max_val->split(-2, 9, false);
-    //[I, 9, i/8/9, 8]
-    max_val->split(-2, 1);
-    //[I, 9, i/8/9/1, 1, 8]
-    auto ref1 = max_val->rFactor({1, 4});
-    ref1->axis(0)->parallelize(ParallelType::BIDx);
-    ref1->axis(2)->parallelize(ParallelType::TIDx);
-    ref1->axis(2)->padToMultipleOfWarp(256);
-    ref1->axis(3)->parallelize(ParallelType::Unswitch);
+  max_val->split(-1, 8);
+  max_val->split(-2, 9, false);
+  //[I, 9, i/8/9, 8]
+  max_val->split(-2, 1);
+  //[I, 9, i/8/9/1, 1, 8]
+  auto ref1 = max_val->rFactor({1, 4});
+  ref1->axis(0)->parallelize(ParallelType::BIDx);
+  ref1->axis(2)->parallelize(ParallelType::TIDx);
+  ref1->axis(2)->padToMultipleOfWarp(256);
+  ref1->axis(3)->parallelize(ParallelType::Unswitch);
 
-    TransformPropagator propagator(ref1);
-    MaxRootDomainInfoSpanningTree(ref1).traverse(&propagator);
+  TransformPropagator propagator(ref1);
+  MaxRootDomainInfoSpanningTree(ref1).traverse(&propagator);
 
-    sum_exp->rFactor({1, 4});
+  sum_exp->rFactor({1, 4});
 
-    scheduler_utils::parallelizeAllLike(ref1, ir_utils::allTvs(fusion));
+  scheduler_utils::parallelizeAllLike(ref1, ir_utils::allTvs(fusion));
 
-    x_cache->axis(-1)->parallelize(ParallelType::Vectorize);
-    y->axis(-1)->parallelize(ParallelType::Vectorize);
+  x_cache->axis(-1)->parallelize(ParallelType::Vectorize);
+  y->axis(-1)->parallelize(ParallelType::Vectorize);
 
-    // will cause regression if inline all tvs.
-    inlineMost(ir_utils::allTvsExcept(fusion, {x_cache}));
+  // will cause regression if inline all tvs.
+  inlineMost(ir_utils::allTvsExcept(fusion, {x_cache}));
 
-    auto options = at::TensorOptions().dtype(at::kHalf).device(at::kCUDA, 0);
-    at::Tensor t0 = at::randn({batch, size}, options);
+  auto options = at::TensorOptions().dtype(at::kHalf).device(at::kCUDA, 0);
+  at::Tensor t0 = at::randn({batch, size}, options);
 
-    // will cause regression if set index_type = PrimDataType::Int32
-    CompileParams compile_opts = {
-        .index_type = index_type,
-        .maxrregcount = 128,
-        .enable_ptxas_verbose = true};
-    FusionExecutor fe;
-    fe.compileFusion(fusion, {t0}, LaunchParams{}, compile_opts);
-    clearL2Cache();
-    auto cg_outputs = fe.runFusion({t0}, LaunchParams{}, compile_opts);
-  };
+  // will cause regression if set index_type = PrimDataType::Int32
+  CompileParams compile_opts = {
+      .index_type = index_type,
+      .maxrregcount = 128,
+      .enable_ptxas_verbose = true};
+  FusionExecutor fe;
+  fe.compileFusion(fusion, {t0}, LaunchParams{}, compile_opts);
+  clearL2Cache();
+  auto cg_outputs = fe.runFusion({t0}, LaunchParams{}, compile_opts);
+};
+TEST_F(NVFuserTest, TMP32) {
   // kernel1 run in 0.814496 ms, achieved: 2966.15 GB/s
   // kernel2 run in 0.905056 ms, achieved: 2669.36 GB/s
   // for (auto index_type : {PrimDataType::Int, PrimDataType::Int32}) {
@@ -701,14 +701,36 @@ TEST_F(NVFuserTest, TMP1) {
   // }
 
   // kernel1 run in 0.913152 ms, achieved: 2645.69 GB/s
-  // kernel2 run in 0.816928 ms, achieved: 2957.32 GB/s  
+  // kernel2 run in 0.816928 ms, achieved: 2957.32 GB/s
 
   // can't reproduce from root@cl1-2547:
   // kernel1 run in 3.09197 ms, achieved: 781.353 GB/s
   // kernel2 run in 3.31011 ms, achieved: 729.86 GB/s
-  for (auto index_type : {PrimDataType::Int32, PrimDataType::Int}) {
-    test(index_type);
-  }
-}
+  // test(PrimDataType::Int32);
+  test(PrimDataType::Int32);
 
+  // nvdl-a112-d004
+  // kernel1 run in 1.57901 ms, achieved: 1530.02 GB/s
+  // kernel2 run in 1.536 ms, achieved: 1572.86 GB/s
+}
+TEST_F(NVFuserTest, TMP64) {
+  // kernel1 run in 0.814496 ms, achieved: 2966.15 GB/s
+  // kernel2 run in 0.905056 ms, achieved: 2669.36 GB/s
+  // for (auto index_type : {PrimDataType::Int, PrimDataType::Int32}) {
+  //   test(index_type);
+  // }
+
+  // kernel1 run in 0.913152 ms, achieved: 2645.69 GB/s
+  // kernel2 run in 0.816928 ms, achieved: 2957.32 GB/s
+
+  // can't reproduce from root@cl1-2547:
+  // kernel1 run in 3.09197 ms, achieved: 781.353 GB/s
+  // kernel2 run in 3.31011 ms, achieved: 729.86 GB/s
+  // test(PrimDataType::Int32);
+  test(PrimDataType::Int);
+
+  // nvdl-a112-d004
+  // kernel1 run in 1.57901 ms, achieved: 1530.02 GB/s
+  // kernel2 run in 1.536 ms, achieved: 1572.86 GB/s
+}
 } // namespace nvfuser
