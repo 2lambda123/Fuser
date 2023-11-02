@@ -679,6 +679,7 @@ auto test = [](PrimDataType index_type) {
 
   // will cause regression if inline all tvs.
   inlineMost(ir_utils::allTvsExcept(fusion, {x_cache}));
+  // inlineMost();
 
   auto options = at::TensorOptions().dtype(at::kHalf).device(at::kCUDA, 0);
   at::Tensor t0 = at::randn({batch, size}, options);
