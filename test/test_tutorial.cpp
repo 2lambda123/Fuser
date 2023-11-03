@@ -693,6 +693,9 @@ auto test = [](PrimDataType index_type) {
   fe.compileFusion(fusion, {t0}, LaunchParams{}, compile_opts);
   clearL2Cache();
   auto cg_outputs = fe.runFusion({t0}, LaunchParams{}, compile_opts);
+
+  auto ref = at::_softmax(t0, -1, false);
+  testValidate(fusion, cg_outputs, {t0}, {ref}, __LINE__, __FILE__);
 };
 TEST_F(NVFuserTest, TMP32) {
   // kernel1 run in 0.814496 ms, achieved: 2966.15 GB/s
