@@ -384,6 +384,137 @@ TensorView* matmul(
   }
 }
 
+TensorView* matmulVolta_v2(TensorView* a, TensorView* b, MatmulLayout layout) {
+  NVF_CHECK(
+      a->nDims() == 2 && b->nDims() == 2, "only pure matmuls for these tests");
+  // Here, we canonicalize the mma output as M, N, K, but the position of K does
+  // not really matter. So the implicit transpose is only required for NN.
+  TensorView *tv2 = nullptr, *tv0b = nullptr, *tv1b = nullptr, *tv3 = nullptr; 
+  switch (layout) {
+    case MatmulLayout::TT:
+      tv0b = broadcast(a, {false, false, true});
+      tv1b = broadcast(b, {true, false, false});
+      tv2 = fusedMultiplySum(tv0b, tv1b, {1});
+      // M, K, N -> M, N, K
+      tv2->reorder({{1, -1}});
+      tv2->commitLeafToRFactor();
+      break;
+    case MatmulLayout::TN:
+      tv0b = broadcast(a, {false, true, false});
+      tv1b = broadcast(b, {true, false, false});
+      tv3 = mul(tv0b, tv1b);
+      tv2 = sum(tv3, {2});
+      // tv2 = fusedMultiplySum(tv0b, tv1b, {2});
+
+      // M, N, K
+      break;
+    case MatmulLayout::NT:
+      tv0b = broadcast(a, {false, false, true});
+      tv1b = broadcast(b, {false, true, false});
+      tv2 = fusedMultiplySum(tv0b, tv1b, {0});
+      // K, M, N -> M, N, K
+      tv2->reorder({{0, -1}});
+      tv2->commitLeafToRFactor();
+      break;
+    case MatmulLayout::NN:
+      tv0b = broadcast(a, {true, false, false});
+      tv1b = broadcast(b, {false, false, true});
+      tv2 = fusedMultiplySum(tv0b, tv1b, {1});
+      // N, K, M -> M, N, K
+      tv2->reorder({{-1, 0}});
+      tv2->commitLeafToRFactor();
+      break;
+    default:
+      NVF_CHECK(false, "unsupported data layout.");
+  }
+  return tv2;
+}
+
+// matmulAtInput provides batched inputs in a splitk-like ordering. It provides
+// contiguous tensors with these shapes
+//   TT: [M, B, K] [B, K, N]
+//   TN: [M, B, K] [N, B, K]
+//   NT: [B, K, M] [B, K, N]
+//   NN: [B, K, M] [N, B, K]
+// fusedMultiplySum assumes [B, M, K] [B, N, K] so here we transpose into that
+// order
+TensorView* matmulTuringOrLater_v2(
+    TensorView* a,
+    TensorView* b,
+    MatmulLayout layout) {
+  NVF_CHECK(a->nDims() == b->nDims());
+  NVF_CHECK(a->nDims() == 2 || a->nDims() == 3);
+  TensorView *tv2 = nullptr, *tv0t = nullptr, *tv1t = nullptr, *tv0b = nullptr,
+             *tv1b = nullptr;
+  if (a->nDims() == 3) { // bmm
+    switch (layout) {
+        // Canonicalize all inputs to [B, M, K] and [B, N, K]
+      case MatmulLayout::TT:
+        tv0t = transpose(a, 0, 1);
+        tv1t = transpose(b, 1, 2);
+        break;
+      case MatmulLayout::TN:
+        tv0t = transpose(a, 0, 1);
+        tv1t = transpose(b, 0, 1);
+        break;
+      case MatmulLayout::NT:
+        tv0t = transpose(a, 1, 2);
+        tv1t = transpose(b, 1, 2);
+        break;
+      case MatmulLayout::NN:
+        tv0t = transpose(a, 1, 2);
+        tv1t = transpose(b, 0, 1);
+        break;
+      default:
+        NVF_CHECK(false, "unsupported data layout.");
+    }
+  } else {
+    switch (layout) {
+        // Canonicalize all inputs to [M, K] and [N, K]
+      case MatmulLayout::TT:
+        tv0t = a;
+        tv1t = transpose(b, 0, 1);
+        break;
+      case MatmulLayout::TN:
+        tv0t = a;
+        tv1t = b;
+        break;
+      case MatmulLayout::NT:
+        tv0t = transpose(a, 0, 1);
+        tv1t = transpose(b, 0, 1);
+        break;
+      case MatmulLayout::NN:
+        tv0t = transpose(a, 0, 1);
+        tv1t = b;
+        break;
+      default:
+        NVF_CHECK(false, "unsupported data layout.");
+    }
+  }
+  std::vector<bool> bcast_dims(a->nDims() + 1, false);
+  bcast_dims.at(bcast_dims.size() - 2) = true;
+  tv0b = broadcast(tv0t, bcast_dims);
+  bcast_dims.at(bcast_dims.size() - 2) = false;
+  bcast_dims.at(bcast_dims.size() - 3) = true;
+  tv1b = broadcast(tv1t, bcast_dims);
+  tv2 = fusedMultiplySum(tv0b, tv1b, {-1});
+  return tv2;
+}
+
+
+TensorView* matmul_v2(
+    TensorView* a,
+    TensorView* b,
+    MatmulLayout layout,
+    bool turing_or_later // TODO: This is a temporary solution. Remove this!
+) {
+  if (turing_or_later) {
+    return matmulTuringOrLater_v2(a, b, layout);
+  } else {
+    return matmulVolta_v2(a, b, layout);
+  }
+}
+
 TensorView* splitkLikeBatchedMatmul(
     TensorView* a,
     TensorView* b,

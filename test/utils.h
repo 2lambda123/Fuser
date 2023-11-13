@@ -593,6 +593,13 @@ TensorView* matmul(
     bool turing_or_later // TODO: This is a temporary solution. Remove this!
 );
 
+TensorView* matmul_v2(
+    TensorView* a,
+    TensorView* b,
+    MatmulLayout layout,
+    bool turing_or_later // TODO: This is a temporary solution. Remove this!
+);
+
 // Generic interface to get splitK-like batched matmul op with the given layout.
 // For splitK like batched matmul, there is only one batch dimension, and that
 // dimension should be right before the K dimension. This function currently
