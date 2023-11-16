@@ -3,10 +3,10 @@
 
 #pragma once
 
-#include <exceptions.h>
 #include <array>
 #include <cstdint>
 #include <deque>
+#include <exception>
 #include <fstream>
 #include <optional>
 #include <sstream>
@@ -14,6 +14,8 @@
 #include <type_traits>
 #include <typeinfo>
 #include <vector>
+
+#include <visibility.h>
 
 namespace nvfuser {
 
@@ -126,7 +128,7 @@ inline decltype(auto) to_str(const Args&... args) {
       args...);
 }
 
-class nvfError : public std::exception {
+class NVF_API nvfError : public std::exception {
   // The actual error message.
   std::string msg_;
   // Context for the message (in order of decreasing specificity).  Context will
@@ -194,13 +196,13 @@ class nvfError : public std::exception {
   std::string compute_what(bool include_backtrace) const;
 };
 
-[[noreturn]] void nvfCheckFail(
+[[noreturn]] NVF_API void nvfCheckFail(
     const char* func,
     const char* file,
     uint32_t line,
     const std::string& msg);
 
-[[noreturn]] void nvfCheckFail(
+[[noreturn]] NVF_API void nvfCheckFail(
     const char* func,
     const char* file,
     uint32_t line,
@@ -222,7 +224,7 @@ class nvfError : public std::exception {
   nvfCheckFail(func, file, line, condMsg);
 }
 
-[[noreturn]] void nvfErrorFail(
+[[noreturn]] NVF_API void nvfErrorFail(
     const char* func,
     const char* file,
     uint32_t line,

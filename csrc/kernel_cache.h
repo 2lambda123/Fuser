@@ -89,7 +89,7 @@ struct PairPointerEquals {
 //!  single-kernel and multi-kernel caching/compiling/launching
 class FusionKernelRuntime {
  public:
-  explicit FusionKernelRuntime(
+  NVF_API explicit FusionKernelRuntime(
       std::unique_ptr<Fusion> fusion,
       const KernelArgumentHolder& inputs,
       std::optional<PrimDataType> forced_index_type = std::nullopt,
@@ -138,11 +138,11 @@ class FusionKernelRuntime {
   }
 
   //! Unified interface to run the managed kernels with given input
-  std::vector<at::Tensor> runWithInputs(KernelArgumentHolder& args);
+  NVF_API std::vector<at::Tensor> runWithInputs(KernelArgumentHolder& args);
 
   //! Compile a kernel executor for given inputs. Note: The compilation is
   //! multithreaded. The segments in the fusion are compiled independently.
-  void compileFusionParallel(KernelArgumentHolder args);
+  NVF_API void compileFusionParallel(KernelArgumentHolder args);
 
   const std::vector<int64_t>& getArgsNumAfterSegmentRuns() {
     return num_live_args_after_segment_runs_;
@@ -212,7 +212,7 @@ class FusionKernelRuntime {
   //
   // Heuristics must use the index type of forced_index_type if given.
   using HeuristicsPtr = std::unique_ptr<FusionHeuristics>;
-  std::optional<HeuristicsPtr> getMaybeHeuristicsFor(
+  NVF_API std::optional<HeuristicsPtr> getMaybeHeuristicsFor(
       const KernelArgumentHolder& args,
       std::optional<PrimDataType> forced_index_type = std::nullopt);
 
@@ -249,7 +249,7 @@ class FusionKernelRuntime {
       SegmentedGroup* sg);
 
   //! Access the list of schedulers maintained in this runtime instance
-  const std::vector<SchedulerEntryPtr>& schedulers() const;
+  NVF_API const std::vector<SchedulerEntryPtr>& schedulers() const;
 
   void prepareRuntimeOrder();
 
@@ -365,7 +365,7 @@ class InputsIdLookup : public NonCopyable {
   //! However, if scalar_inputs_to_record is provided, then the values of scalar
   //! inputs at the integer locations specified in that argument will affect the
   //! returned ID.
-  IdLookupReturn lookupId(
+  NVF_API IdLookupReturn lookupId(
       const at::ArrayRef<c10::IValue>& inputs,
       const std::unordered_set<size_t>& scalar_inputs_to_record = {},
       int8_t device = 0);
@@ -503,7 +503,7 @@ class FusionExecutorCache {
   //! create new fusion executor cache at a given device to handle kernel
   //! generation of dynamic sizes
   //! fusion executor is taking the ownership of `fusion`
-  explicit FusionExecutorCache(
+  NVF_API explicit FusionExecutorCache(
       std::unique_ptr<Fusion> fusion,
       int64_t fusion_id = 0);
 
@@ -516,7 +516,7 @@ class FusionExecutorCache {
   //! cases as our analysis of index type may be overly conservative
   //! for intermediate tensors.
   //! WARING: Correctness is not guaranteed.
-  std::vector<at::Tensor> runFusionWithInputs(
+  NVF_API std::vector<at::Tensor> runFusionWithInputs(
       const at::ArrayRef<c10::IValue>& inputs,
       std::optional<PrimDataType> forced_index_type = std::nullopt,
       std::optional<int8_t> selected_device = std::nullopt);
@@ -528,7 +528,9 @@ class FusionExecutorCache {
       std::optional<int8_t> selected_device = std::nullopt);
 
   //! query if there's a kernel ready to go for given inputs
-  bool isCompiled(const at::ArrayRef<c10::IValue>& inputs, int8_t device = 0);
+  NVF_API bool isCompiled(
+      const at::ArrayRef<c10::IValue>& inputs,
+      int8_t device = 0);
 
   Fusion* fusion() {
     return fusion_.get();

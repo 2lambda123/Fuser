@@ -9,6 +9,7 @@
 
 #include <c10/macros/Export.h>
 #include <exceptions.h>
+#include <visibility.h>
 
 #include <ir/interface_nodes.h>
 #include <type.h>
@@ -23,14 +24,14 @@
 
 namespace nvfuser {
 
-std::pair<Val*, Val*> dispatchSwizzle(
+NVF_API std::pair<Val*, Val*> dispatchSwizzle(
     Swizzle2DType type,
     Val* x,
     Val* y,
     Val* maybe_size_x,
     Val* maybe_size_y);
 
-std::pair<Val*, Val*> dispatchUnSwizzle(
+NVF_API std::pair<Val*, Val*> dispatchUnSwizzle(
     Swizzle2DType type,
     Val* x,
     Val* y,

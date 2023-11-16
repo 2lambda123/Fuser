@@ -7,10 +7,13 @@
 // clang-format on
 #pragma once
 
+#include <string>
 #include <unordered_map>
+#include <vector>
 
 #include <fusion.h>
 #include <ir/interface_nodes.h>
+#include <visibility.h>
 
 namespace nvfuser::optimization {
 
@@ -18,7 +21,7 @@ struct Layout {
   std::vector<IterDomain*> allocation_domain;
   std::vector<std::optional<bool>> contiguity;
 
-  std::string toString(int indent_size = 0) const;
+  NVF_API std::string toString(int indent_size = 0) const;
 };
 
 class AliasAnalysisResult {
@@ -30,11 +33,11 @@ class AliasAnalysisResult {
   AliasAnalysisResult& operator=(AliasAnalysisResult&&) = default;
 
   // Returns itself if `alias` doesn't alias anything.
-  const Val* findRoot(const Val* alias) const;
+  NVF_API const Val* findRoot(const Val* alias) const;
 
   // Returns the preferred layout. If `alias` is not in `preferred_layout_`,
   // returns the `TensorView`'s initial layout.
-  Layout preferredLayout(const Val* alias) const;
+  NVF_API Layout preferredLayout(const Val* alias) const;
 
   // Marks `source` as the immediate aliasing source of `alias` and sets the
   // preferred layout.
@@ -61,6 +64,6 @@ class AliasAnalysisResult {
 // these TensorViews and expects the user to resolve any incompatibility.
 // MarkAliasPass, its only user at this moment, marks an output as an alias only
 // when its allocation domain is empty. I'm happy to revisit this contract.
-AliasAnalysisResult findAliases(Fusion* fusion);
+NVF_API AliasAnalysisResult findAliases(Fusion* fusion);
 
 } // namespace nvfuser::optimization

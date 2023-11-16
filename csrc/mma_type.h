@@ -9,6 +9,7 @@
 #include <c10/macros/Export.h>
 #include <exceptions.h>
 #include <fusion.h>
+#include <visibility.h>
 
 namespace nvfuser {
 
@@ -136,7 +137,7 @@ struct MmaOptions {
 //! User interface for configuring the mma and mma related
 //!  operators by specifying the mma instruction tile type
 //!  input data layout, and the operand position of a tensor.
-class MmaBuilder {
+class NVF_API MmaBuilder {
  public:
   //! Initialized a mma builder, for the given mma instruction type.
   //!  TODO: the mma implementation is generic and should not have
@@ -203,15 +204,15 @@ int getInputBRegisterSize(MmaOptions::MacroType macro);
 GemmTile getMmaOpShape(MmaOptions::MacroType macro);
 
 // MMA stringify utils
-std::string toString(MmaOptions::MacroType macro);
-std::string toString(MmaOptions::MmaLayout input_layout);
+NVF_API std::string toString(MmaOptions::MacroType macro);
+NVF_API std::string toString(MmaOptions::MmaLayout input_layout);
 std::string toString(const GemmTile& tile);
-std::string toString(const MatMulTileOptions& opts);
-std::string toString(MmaOptions::MacroType macro, bool);
+NVF_API std::string toString(const MatMulTileOptions& opts);
+NVF_API std::string toString(MmaOptions::MacroType macro, bool);
 
 // MMA hash utils
-size_t hash(MmaOptions::MacroType macro);
+NVF_API size_t hash(MmaOptions::MacroType macro);
 size_t hash(MmaOptions::MmaLayout input_layout);
 size_t hash(const GemmTile& tile);
-size_t hash(const MatMulTileOptions& opts);
+NVF_API size_t hash(const MatMulTileOptions& opts);
 } // namespace nvfuser

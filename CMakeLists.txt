@@ -4,6 +4,8 @@
 cmake_minimum_required(VERSION 3.18 FATAL_ERROR)
 project(nvfuser)
 
+cmake_policy(SET CMP0063 NEW) # make symbol visibility always apply
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 set(NVFUSER_ROOT ${PROJECT_SOURCE_DIR})
@@ -219,6 +221,14 @@ endif()
 
 set(NVFUSER_CODEGEN ${PROJECT_NAME}_codegen)
 add_library(${NVFUSER_CODEGEN} SHARED ${NVFUSER_SRCS})
+set_target_properties(${NVFUSER_CODEGEN} PROPERTIES
+  C_STANDARD 17
+  CUDA_STANDARD 17 # CUDA 11 does not support C++20, so we hardcode 17.
+  CXX_STANDARD ${NVFUSER_CPP_STANDARD}
+  CXX_VISIBILITY_PRESET hidden
+  POSITION_INDEPENDENT_CODE Yes
+  VISIBILITY_INLINES_HIDDEN Yes
+)
 
 if(NOT MSVC)
   target_compile_options(${NVFUSER_CODEGEN} PRIVATE
@@ -238,7 +248,16 @@ target_include_directories(${NVFUSER_CODEGEN} PUBLIC
   "$<BUILD_INTERFACE:${NVFUSER_SRCS_DIR}>"
   "$<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}/nvfuser>"
 )
-set_property(TARGET ${NVFUSER_CODEGEN} PROPERTY CXX_STANDARD ${NVFUSER_CPP_STANDARD})
+set_target_properties(${NVFUSER_CODEGEN} PROPERTIES
+  C_STANDARD 17
+  CXX_STANDARD ${NVFUSER_CPP_STANDARD}
+  CXX_VISIBILITY_PRESET hidden
+  # this is to find pip installed nvrtc/nvtx .so
+  INSTALL_RPATH
+  "$ORIGIN/../../nvidia/cuda_runtime/lib:$ORIGIN/../../nvidia/cuda_nvrtc/lib:$ORIGIN/../../nvidia/nvtx/lib:$ORIGIN/../../nvidia/cuda_cupti/lib:$ORIGIN/../../torch/lib"
+  POSITION_INDEPENDENT_CODE Yes
+  VISIBILITY_INLINES_HIDDEN Yes
+)
 
 # Ensure we don't link against libcuda; we'll dlopen it ourselves.
 list(FILTER TORCH_LIBRARIES EXCLUDE REGEX "libcuda\.so")
@@ -258,9 +277,6 @@ if(NVFUSER_BUILD_WITH_ASAN)
   add_link_options(-fsanitize=address)
 endif()
 
-# this is to find pip installed nvrtc/nvtx .so
-set_target_properties(${NVFUSER_CODEGEN} PROPERTIES INSTALL_RPATH
-  "$ORIGIN/../../nvidia/cuda_runtime/lib:$ORIGIN/../../nvidia/cuda_nvrtc/lib:$ORIGIN/../../nvidia/nvtx/lib:$ORIGIN/../../nvidia/cuda_cupti/lib:$ORIGIN/../../torch/lib")
 install(TARGETS ${NVFUSER_CODEGEN} EXPORT NvfuserTargets DESTINATION lib)
 
 # We are keeping fusion_cache_generated.h for the submodule build because flatc is unavailable.
@@ -283,6 +299,14 @@ if(NVFUSER_STANDALONE_BUILD_WITH_UCC)
   find_package(UCX REQUIRED)
 
   add_library(__nvfuser_ucc INTERFACE)
+  set_target_properties(__nvfuser_ucc PROPERTIES
+    C_STANDARD 17
+    CUDA_STANDARD 17 # CUDA 11 does not support C++20, so we hardcode 17.
+    CXX_STANDARD ${NVFUSER_CPP_STANDARD}
+    CXX_VISIBILITY_PRESET hidden
+    POSITION_INDEPENDENT_CODE Yes
+    VISIBILITY_INLINES_HIDDEN Yes
+  )
   target_link_libraries(__nvfuser_ucc INTERFACE ucx::ucs ucx::ucp ucc::ucc)
   target_include_directories(__nvfuser_ucc INTERFACE ${UCC_INCLUDE_DIRS})
   target_link_libraries(${NVFUSER_CODEGEN} PRIVATE __nvfuser_ucc)
@@ -322,7 +346,16 @@ if(BUILD_PYTHON)
 
   set(NVFUSER "${PROJECT_NAME}")
   add_library(${NVFUSER} MODULE ${NVFUSER_PYTHON_SRCS})
-  set_property(TARGET ${NVFUSER} PROPERTY CXX_STANDARD ${NVFUSER_CPP_STANDARD})
+  set_target_properties(${NVFUSER} PROPERTIES
+    C_STANDARD 17
+    CUDA_STANDARD 17 # CUDA 11 does not support C++20, so we hardcode 17.
+    CXX_STANDARD ${NVFUSER_CPP_STANDARD}
+    CXX_VISIBILITY_PRESET hidden
+    INSTALL_RPATH
+    "$ORIGIN/lib:$ORIGIN/../nvidia/cuda_runtime/lib:$ORIGIN/../nvidia/cuda_nvrtc/lib:$ORIGIN/../nvidia/nvtx/lib:$ORIGIN/../../nvidia/cuda_cupti/lib:$ORIGIN/../torch/lib"
+    POSITION_INDEPENDENT_CODE Yes
+    VISIBILITY_INLINES_HIDDEN Yes
+  )
   target_include_directories(${NVFUSER} SYSTEM PRIVATE
     ${CMAKE_SOURCE_DIR}/third_party/flatbuffers/include
   )
@@ -367,8 +400,6 @@ if(BUILD_PYTHON)
   target_link_libraries(${NVFUSER} PRIVATE "${TORCH_INSTALL_PREFIX}/lib/libtorch_python.so")
   target_link_libraries(${NVFUSER} PRIVATE dynamic_type)
   target_link_libraries(${NVFUSER} PRIVATE pybind11::pybind11)
-  set_target_properties(${NVFUSER} PROPERTIES INSTALL_RPATH
-    "$ORIGIN/lib:$ORIGIN/../nvidia/cuda_runtime/lib:$ORIGIN/../nvidia/cuda_nvrtc/lib:$ORIGIN/../nvidia/nvtx/lib:$ORIGIN/../../nvidia/cuda_cupti/lib:$ORIGIN/../torch/lib")
   install(TARGETS ${NVFUSER} DESTINATION lib)
 
 endif()
@@ -447,13 +478,28 @@ if(BUILD_TEST)
   set(NVFUSER_TESTS_KERNELS "${NVFUSER_TESTS}_kernels")
 
   add_library(${NVFUSER_TESTS_KERNELS} SHARED ${NVFUSER_ROOT}/test/rng_kernels.cu)
-  # CUDA 11 does not support C++20, so hard code C++17 here
-  set_property(TARGET ${NVFUSER_TESTS_KERNELS} PROPERTY CXX_STANDARD 17)
+  set_target_properties(${NVFUSER} PROPERTIES
+    C_STANDARD 17
+    CUDA_STANDARD 17 # CUDA 11 does not support C++20, so we hardcode 17.
+    CXX_STANDARD ${NVFUSER_CPP_STANDARD}
+    CXX_STANDARD_REQUIRED ON
+    CXX_VISIBILITY_PRESET hidden
+    POSITION_INDEPENDENT_CODE Yes
+    VISIBILITY_INLINES_HIDDEN Yes
+  )
   target_link_libraries(${NVFUSER_TESTS_KERNELS} PRIVATE torch ${TORCH_LIBRARIES} ${NVFUSER_CODEGEN})
   target_include_directories(${NVFUSER_TESTS_KERNELS} PRIVATE "${NVFUSER_ROOT}")
 
   add_executable(${NVFUSER_TESTS} ${JIT_TEST_SRCS})
-  set_property(TARGET ${NVFUSER_TESTS} PROPERTY CXX_STANDARD ${NVFUSER_CPP_STANDARD})
+  set_target_properties(${NVFUSER_TESTS} PROPERTIES
+    C_STANDARD 17
+    CUDA_STANDARD 17 # CUDA 11 does not support C++20, so we hardcode 17.
+    CXX_STANDARD ${NVFUSER_CPP_STANDARD}
+    CXX_STANDARD_REQUIRED ON
+    CXX_VISIBILITY_PRESET hidden
+    POSITION_INDEPENDENT_CODE Yes
+    VISIBILITY_INLINES_HIDDEN Yes
+  )
   target_compile_definitions(${NVFUSER_TESTS} PRIVATE USE_GTEST)
   target_include_directories(${NVFUSER_TESTS} PRIVATE "${NVFUSER_ROOT}")
   target_include_directories(${NVFUSER_TESTS} SYSTEM PRIVATE
@@ -509,7 +555,15 @@ if(BUILD_NVFUSER_BENCHMARK)
 
   set(NVFUSER_BENCHMARK "${PROJECT_NAME}_bench")
   add_executable(${NVFUSER_BENCHMARK} ${BENCHMARK_SRCS})
-  set_property(TARGET ${NVFUSER_BENCHMARK} PROPERTY CXX_STANDARD ${NVFUSER_CPP_STANDARD})
+  set_target_properties(${NVFUSER_BENCHMARK} PROPERTIES
+    C_STANDARD 17
+    CUDA_STANDARD 17 # CUDA 11 does not yet support 20
+    CXX_STANDARD ${NVFUSER_CPP_STANDARD}
+    CXX_STANDARD_REQUIRED ON
+    CXX_VISIBILITY_PRESET hidden
+    POSITION_INDEPENDENT_CODE Yes
+    VISIBILITY_INLINES_HIDDEN Yes
+  )
 
   target_include_directories(${NVFUSER_BENCHMARK} SYSTEM PRIVATE
     ${CMAKE_SOURCE_DIR}/third_party/benchmark/include

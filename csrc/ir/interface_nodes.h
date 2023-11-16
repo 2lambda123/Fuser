@@ -16,6 +16,7 @@
 #include <ir/internal_nodes.h>
 #include <mma_type.h>
 #include <type.h>
+#include <visibility.h>
 
 #include <torch/csrc/jit/ir/ir.h>
 
@@ -96,7 +97,7 @@ class TVDomainGuard;
 //! getComputeAtAxis not being const because it can return a TV that some expect
 //! to be non-const is the biggest headache.
 //!
-class TensorView : public Val {
+class NVF_API TensorView : public Val {
  public:
   TensorView(
       IrBuilderPasskey passkey,
@@ -612,7 +613,7 @@ class TensorView : public Val {
 //!       .contiguity(contiguity)
 //!       .build();
 //!
-class TensorViewBuilder {
+class NVF_API TensorViewBuilder {
  public:
   //! Set the number of dimensions of the tensor (default 0, meaning scalar)
   TensorViewBuilder& ndims(size_t ndims);
