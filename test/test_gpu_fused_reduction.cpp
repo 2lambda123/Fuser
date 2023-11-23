@@ -2561,4 +2561,59 @@ TEST_F(NVFuserTest, FusionCrossEntropyGatherPattern_CUDA) {
   testValidate(&fusion, cg_outputs, inputs, {ref}, __LINE__, __FILE__);
 }
 
+// Test iteration-grouped (as opposed to horizontally fused) grid reduction
+TEST_F(NVFuserTest, FusionCrossIterationGroupedGridReduce1_CUDA) {
+  Fusion fusion;
+  FusionGuard fg(&fusion);
+
+  auto tv0 = makeSymbolicTensor(2);
+  fusion.addInput(tv0);
+  auto tv1 = sum(tv0, {0});
+  fusion.addOutput(tv1);
+
+  // parallelize like T1[ rblockIdx.x1{i0}, iS2{ceilDiv(i1, 16 * bdimx)},
+  // iS3{4}, iS4{4}, ithreadIdx.x5{bdimx} ]
+  int64_t bdimx = 768;
+
+  tv0->cacheAfter();
+  auto tv3 = tv1->cacheBefore();
+
+  tv3->axis(0)->parallelize(ParallelType::BIDx);
+  tv3->split(-1, bdimx);
+  tv3->axis(-1)->parallelize(ParallelType::TIDx);
+  // Create a couple loops to simulate the matmul case of three nested serial
+  // loops
+  tv3->split(-2, 4);
+  tv3->split(-3, 4);
+
+  // Move BIDx dimension last so we can inline with output
+  tv3->reorder({
+      {1, 0},
+      {2, 1},
+      {3, 2},
+      {0, 3},
+  });
+
+  TransformPropagator propagator(tv3);
+  MaxRootDomainInfoSpanningTree(tv3).traverse(&propagator);
+  scheduler_utils::parallelizeAllLike(tv3);
+
+  inlineMost();
+
+  fusion.printMath();
+
+  auto options = at::TensorOptions().dtype(at::kFloat).device(at::kCUDA, 0);
+  // this size gives us loop sizes 4, 4, 4 (by bdimx threads per block) with
+  // splitk_factor many blocks
+  int splitk_factor = 2;
+  auto t0 = at::randn({splitk_factor, 128 * 128}, options);
+  std::vector<c10::IValue> inputs = {t0};
+
+  FusionExecutor fe;
+  fe.compileFusion(&fusion, inputs);
+  auto cg_outputs = fe.runFusion(inputs);
+
+  testValidate(&fusion, cg_outputs, inputs, __LINE__, __FILE__);
+}
+
 } // namespace nvfuser
