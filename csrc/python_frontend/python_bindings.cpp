@@ -2546,7 +2546,6 @@ void initNvFuserPythonBindings(PyObject* module) {
       "squeeze",
       [](FusionDefinition::Operators& self,
          Tensor arg,
-         std::vector<int64_t>& original_shape,
          std::vector<int64_t>& dims) -> Tensor {
         FUSER_PERF_SCOPE("Operators.squeeze");
         NVF_CHECK(
@@ -2556,12 +2555,10 @@ void initNvFuserPythonBindings(PyObject* module) {
         fd->defineRecord(new SqueezeOpRecord(
             {fd->recordingState(arg())},
             {fd->recordingState(output())},
-            std::move(original_shape),
             std::move(dims)));
         return output;
       },
       py::arg("arg"),
-      py::arg("original_shape"),
       py::arg("dims"),
       py::return_value_policy::reference);
   nvf_ops.def(
