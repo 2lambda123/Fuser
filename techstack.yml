@@ -2,7 +2,7 @@ repo_name: 2lambda123/Fuser
 report_id: 58cb2f1cc6e59066b5d8fde6570a71ab
 version: 0.1
 repo_type: Public
-timestamp: '2023-12-29T20:31:32+00:00'
+timestamp: '2024-01-05T08:14:08+00:00'
 requested_by: 2lambda123
 provider: github
 branch: main
@@ -16,6 +16,7 @@ tools:
   category: Languages & Frameworks
   sub_category: Languages
   image_url: https://img.stackshare.io/no-img-open-source.png
+  detection_source_url: https://github.com/2lambda123/Fuser
   detection_source: Repo Metadata
 - name: C++
   description: Has imperative, object-oriented and generic programming features, while
@@ -26,6 +27,7 @@ tools:
   category: Languages & Frameworks
   sub_category: Languages
   image_url: https://img.stackshare.io/service/1049/cplusplus.png
+  detection_source_url: https://github.com/2lambda123/Fuser
   detection_source: Repo Metadata
 - name: JavaScript
   description: Lightweight, interpreted, object-oriented language with first-class
@@ -36,6 +38,7 @@ tools:
   category: Languages & Frameworks
   sub_category: Languages
   image_url: https://img.stackshare.io/service/1209/javascript.jpeg
+  detection_source_url: https://github.com/2lambda123/Fuser
   detection_source: Repo Metadata
 - name: Jinja
   description: Full featured template engine for Python
@@ -46,6 +49,7 @@ tools:
   category: Languages & Frameworks
   sub_category: Templating Languages & Extensions
   image_url: https://img.stackshare.io/service/2303/New_Project__20_.png
+  detection_source_url: https://github.com/2lambda123/Fuser/blob/main/tools/codediff/requirements.txt
   detection_source: tools/codediff/requirements.txt
   last_updated_by: Jacob Hinkle
   last_updated_on: 2023-10-23 18:30:35.000000000 Z
@@ -58,6 +62,7 @@ tools:
   category: Languages & Frameworks
   sub_category: Languages
   image_url: https://img.stackshare.io/service/993/pUBY5pVj.png
+  detection_source_url: https://github.com/2lambda123/Fuser
   detection_source: Repo Metadata
 - name: CMake
   description: 'An open-source system that manages the build process '
@@ -67,6 +72,7 @@ tools:
   category: Build, Test, Deploy
   sub_category: Java Build Tools
   image_url: https://img.stackshare.io/service/2424/0UlUI_y1_400x400.jpg
+  detection_source_url: https://github.com/2lambda123/Fuser
   detection_source: Repo Metadata
 - name: Git
   description: Fast, scalable, distributed revision control system
@@ -76,6 +82,7 @@ tools:
   category: Build, Test, Deploy
   sub_category: Version Control System
   image_url: https://img.stackshare.io/service/1046/git.png
+  detection_source_url: https://github.com/2lambda123/Fuser
   detection_source: Repo Metadata
 - name: GitHub Actions
   description: Automate your workflow from idea to production
@@ -85,6 +92,7 @@ tools:
   category: Build, Test, Deploy
   sub_category: Continuous Integration
   image_url: https://img.stackshare.io/service/11563/actions.png
+  detection_source_url: https://github.com/2lambda123/Fuser/blob/main/.github/workflows/blossom-ci.yml
   detection_source: ".github/workflows/blossom-ci.yml"
   last_updated_by: Wang, Xiao
   last_updated_on: 2023-03-22 23:17:59.000000000 Z
@@ -96,6 +104,7 @@ tools:
   category: Build, Test, Deploy
   sub_category: Hosted Package Repository
   image_url: https://img.stackshare.io/service/12572/-RIWgodF_400x400.jpg
+  detection_source_url: https://github.com/2lambda123/Fuser/blob/main/requirements.txt
   detection_source: requirements.txt
   last_updated_by: jjsjann123
   last_updated_on: 2023-03-29 02:17:08.000000000 Z
@@ -107,6 +116,7 @@ tools:
   category: Application Utilities
   sub_category: Machine Learning Tools
   image_url: https://img.stackshare.io/service/2836/LUOWehvo_400x400.jpeg
+  detection_source_url: https://github.com/2lambda123/Fuser
   detection_source: Repo Metadata
 - name: Shell
   description: A shell is a text-based terminal, used for manipulating programs and
@@ -117,6 +127,7 @@ tools:
   category: Languages & Frameworks
   sub_category: Languages
   image_url: https://img.stackshare.io/service/4631/default_c2062d40130562bdc836c13dbca02d318205a962.png
+  detection_source_url: https://github.com/2lambda123/Fuser
   detection_source: Repo Metadata
 - name: pybind11
   description: Seamless operability between C++11 and Python
@@ -127,6 +138,7 @@ tools:
   category: Libraries
   sub_category: PyPI Packages
   image_url: https://img.stackshare.io/package/20050/default_b0b684477aefb2da4c92a4bafd91d26e16511cd1.png
+  detection_source_url: https://github.com/2lambda123/Fuser/blob/main/requirements.txt
   detection_source: requirements.txt
   last_updated_by: jjsjann123
   last_updated_on: 2023-03-29 02:17:08.000000000 Z
